@@ -8,8 +8,8 @@ class RibbonData:
             'devices': []
         }
 
-    def add_stripe(self, x, width, color):
-        self.data['stripes'].append({'x': x, 'width': width, 'color': color})
+    def add_stripe(self, x, width, color, mirrored=False):
+        self.data['stripes'].append({'x': x, 'width': width, 'color': color, 'mirrored': mirrored})
 
     def add_device(self, name, color, x, y):
         self.data['devices'].append({'name': name, 'color': color, 'x': x, 'y': y})
@@ -23,8 +23,8 @@ class RibbonData:
     def remove_device(self, index):
         del self.data['devices'][index]
 
-    def edit_stripe(self, index, x, width, color):
-        self.data['stripes'][index] = {'x': x, 'width': width, 'color': color}
+    def edit_stripe(self, index, x, width, color, mirrored):
+        self.data['stripes'][index] = {'x': x, 'width': width, 'color': color, 'mirrored': mirrored}
 
     def edit_device(self, index, name, color, x, y):
         self.data['devices'][index] = {'name': name, 'color': color, 'x': x, 'y': y}

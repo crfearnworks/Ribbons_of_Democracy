@@ -39,7 +39,8 @@ class RibbonDesigner(QMainWindow):
             ("Remove Device", self.remove_device),
             ("Change Background", self.change_background),
             ("Clear All", self.clear_all),
-            ("Undo", self.undo_last_action)
+            ("Undo", self.undo_last_action),
+            ("Toggle Mirror", self.toggle_mirror_stripe)
         ]
 
         for text, func in buttons:
@@ -84,7 +85,8 @@ class RibbonDesigner(QMainWindow):
             stripe = self.ribbon_data.data['stripes'][index]
             x, width, color = get_stripe_input(self, stripe['x'], stripe['width'])
             if x is not None:
-                self.ribbon_data.edit_stripe(index, x, width, color)
+                mirrored = stripe.get('mirrored', False)
+                self.ribbon_data.edit_stripe(index, x, width, color, mirrored)
                 self.draw_ribbon()
 
     def remove_stripe(self):
@@ -143,4 +145,11 @@ class RibbonDesigner(QMainWindow):
         if device_input:
             name, color, x, y = device_input
             self.ribbon_data.add_device(name, color, x, y)
+            self.draw_ribbon()
+
+    def toggle_mirror_stripe(self):
+        index = select_item(self, "Toggle Mirror Stripe", "Select stripe to mirror:", [f"Stripe at x={s['x']}, width={s['width']}" for s in self.ribbon_data.data['stripes']])
+        if index is not None:
+            stripe = self.ribbon_data.data['stripes'][index]
+            stripe['mirrored'] = not stripe.get('mirrored', False)
             self.draw_ribbon()

@@ -14,6 +14,9 @@ class RibbonDrawer:
         # Draw stripes
         for stripe in ribbon_data.data['stripes']:
             painter.fillRect(stripe['x'], 0, stripe['width'], 100, QColor(stripe['color']))
+            if stripe['mirrored']:
+                mirrored_x = 300 - stripe['x'] - stripe['width']
+                painter.fillRect(mirrored_x, 0, stripe['width'], 100, QColor(stripe['color']))
         
         # Draw devices
         for device in ribbon_data.data['devices']:
