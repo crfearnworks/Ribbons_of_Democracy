@@ -3,7 +3,7 @@ from PyQt6.QtCore import Qt, QPoint
 
 class RibbonDrawer:
     @staticmethod
-    def draw_ribbon(ribbon_data, painter=None):
+    def draw_ribbon(ribbon_data, painter=None, draw_outline=False):
         if painter is None:
             pixmap = QPixmap(300, 100)
             pixmap.fill(Qt.GlobalColor.transparent)
@@ -31,9 +31,10 @@ class RibbonDrawer:
             painter.setPen(QColor(device['color']))
             painter.drawText(device['x'], device['y'], device['name'])
         
-        # Draw preview for device placement
-        painter.setPen(Qt.PenStyle.DashLine)
-        painter.drawRect(0, 0, 300, 100)
+        # Draw preview outline only if requested
+        if draw_outline:
+            painter.setPen(Qt.PenStyle.DashLine)
+            painter.drawRect(0, 0, 300, 100)
         
         if should_end_painter:
             painter.end()
@@ -64,7 +65,7 @@ class RibbonDrawer:
         painter = QPainter(pixmap)
         painter.scale(scale, scale)
         
-        RibbonDrawer.draw_ribbon(ribbon_data, painter)
+        RibbonDrawer.draw_ribbon(ribbon_data, painter, draw_outline=False)
         painter.end()
         
         pixmap.save(filename, "PNG")
