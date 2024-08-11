@@ -5,7 +5,8 @@ class RibbonData:
         self.data = {
             'background': '#000000',
             'stripes': [],
-            'devices': []
+            'devices': [],
+            'texture_enabled': False
         }
 
     def add_stripe(self, x, width, color, mirrored=False):
@@ -41,5 +42,6 @@ class RibbonData:
         self.data = {
             'background': '#000000',
             'stripes': [],
-            'devices': []
+            'devices': [],
+            'texture_enabled': False
         }

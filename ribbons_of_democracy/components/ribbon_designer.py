@@ -40,7 +40,9 @@ class RibbonDesigner(QMainWindow):
             ("Change Background", self.change_background),
             ("Clear All", self.clear_all),
             ("Undo", self.undo_last_action),
-            ("Toggle Mirror", self.toggle_mirror_stripe)
+            ("Toggle Mirror", self.toggle_mirror_stripe),
+            ("Toggle Texture", self.toggle_texture),
+            ("Save as PNG", self.save_as_png)
         ]
 
         for text, func in buttons:
@@ -134,6 +136,11 @@ class RibbonDesigner(QMainWindow):
         if filename:
             self.ribbon_data.save_to_file(filename)
 
+    def save_as_png(self):
+        filename, _ = QFileDialog.getSaveFileName(self, "Save Ribbon as PNG", "", "PNG Files (*.png)")
+        if filename:
+            RibbonDrawer.save_as_png(self.ribbon_data, filename)
+
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             pos = self.ribbon_label.mapFrom(self, event.pos())
@@ -153,3 +160,7 @@ class RibbonDesigner(QMainWindow):
             stripe = self.ribbon_data.data['stripes'][index]
             stripe['mirrored'] = not stripe.get('mirrored', False)
             self.draw_ribbon()
+
+    def toggle_texture(self):
+        self.ribbon_data.data['texture_enabled'] = not self.ribbon_data.data['texture_enabled']
+        self.draw_ribbon()
