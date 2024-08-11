@@ -3,9 +3,10 @@ from PyQt6.QtCore import Qt, QPoint
 
 class RibbonDrawer:
     @staticmethod
-    def draw_ribbon(ribbon_data, painter=None, draw_outline=False):
+    def draw_ribbon(ribbon_data, painter=None, draw_outline=False, exclude_devices=False):
+        width, height = 1448, 399
         if painter is None:
-            pixmap = QPixmap(300, 100)
+            pixmap = QPixmap(width, height)
             pixmap.fill(Qt.GlobalColor.transparent)
             painter = QPainter(pixmap)
             should_end_painter = True
@@ -13,28 +14,43 @@ class RibbonDrawer:
             should_end_painter = False
 
         # Draw background
-        painter.fillRect(0, 0, 300, 100, QColor(ribbon_data.data['background']))
+        painter.fillRect(0, 0, width, height, QColor(ribbon_data.data['background']))
         
         # Draw stripes
         for stripe in ribbon_data.data['stripes']:
-            painter.fillRect(stripe['x'], 0, stripe['width'], 100, QColor(stripe['color']))
+            scaled_x = int(stripe['x'] * width / 300)
+            scaled_width = int(stripe['width'] * width / 300)
+            painter.fillRect(scaled_x, 0, scaled_width, height, QColor(stripe['color']))
             if stripe['mirrored']:
-                mirrored_x = 300 - stripe['x'] - stripe['width']
-                painter.fillRect(mirrored_x, 0, stripe['width'], 100, QColor(stripe['color']))
+                mirrored_x = width - scaled_x - scaled_width
+                painter.fillRect(mirrored_x, 0, scaled_width, height, QColor(stripe['color']))
         
         # Apply texture if enabled
         if ribbon_data.data['texture_enabled']:
-            RibbonDrawer.apply_texture(painter, 300, 100)
+            RibbonDrawer.apply_texture(painter, width, height)
         
         # Draw devices
-        for device in ribbon_data.data['devices']:
-            painter.setPen(QColor(device['color']))
-            painter.drawText(device['x'], device['y'], device['name'])
+        if not exclude_devices:
+            for device in ribbon_data.data['devices']:
+                scaled_x = int(device['x'] * width / 300)
+                scaled_y = int(device['y'] * height / 100)
+                if device['path'].startswith('#'):
+                    painter.setPen(QColor(device['path']))
+                    font = painter.font()
+                    font.setPointSize(int(12 * height / 100))
+                    painter.setFont(font)
+                    painter.drawText(scaled_x, scaled_y, device['name'])
+                else:
+                    device_pixmap = QPixmap(device['path'])
+                    scaled_width = int(device['width'] * width / 300)
+                    scaled_height = int(device['height'] * height / 100)
+                    scaled_pixmap = device_pixmap.scaled(scaled_width, scaled_height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                    painter.drawPixmap(scaled_x, scaled_y, scaled_pixmap)
         
         # Draw preview outline only if requested
         if draw_outline:
             painter.setPen(Qt.PenStyle.DashLine)
-            painter.drawRect(0, 0, 300, 100)
+            painter.drawRect(0, 0, width, height)
         
         if should_end_painter:
             painter.end()
@@ -58,14 +74,19 @@ class RibbonDrawer:
         painter.drawPixmap(0, 0, texture)
 
     @staticmethod
-    def save_as_png(ribbon_data, filename, scale=4):
-        width, height = 300 * scale, 100 * scale
-        pixmap = QPixmap(width, height)
+    def save_as_png(ribbon_data, filename):
+        original_width, original_height = 1448, 399
+        target_width, target_height = 1024, 282
+
+        pixmap = QPixmap(original_width, original_height)
         pixmap.fill(Qt.GlobalColor.transparent)
         painter = QPainter(pixmap)
-        painter.scale(scale, scale)
-        
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
         RibbonDrawer.draw_ribbon(ribbon_data, painter, draw_outline=False)
         painter.end()
-        
-        pixmap.save(filename, "PNG")
+
+        # Downscale the image
+        scaled_pixmap = pixmap.scaled(target_width, target_height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+        scaled_pixmap.save(filename, "PNG")

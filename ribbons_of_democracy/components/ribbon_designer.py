@@ -1,29 +1,27 @@
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QFileDialog, QColorDialog
-from PyQt6.QtGui import QKeySequence, QShortcut, QColor
+from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QFileDialog, QColorDialog, QDialog, QInputDialog
+from PyQt6.QtGui import QKeySequence, QShortcut, QColor, QPixmap, QPainter
 from PyQt6.QtCore import Qt
 from .ribbon_data import RibbonData
 from .ribbon_drawer import RibbonDrawer
 from .ui_components import get_stripe_input, get_device_input, select_item
+from .device_selector import DeviceSelector
 import copy
 
 class RibbonDesigner(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Ribbons of Democracy")
-        self.setGeometry(100, 100, 800, 600)
-
+        self.setWindowTitle("Ribbon Designer")
         self.ribbon_data = RibbonData()
-        self.history = [copy.deepcopy(self.ribbon_data.data)]
-        self.setup_ui()
-        self.setup_shortcuts()
+        self.ui_scale_factor = 0.5  # Scale factor for UI display
+        self.init_ui()
 
-    def setup_ui(self):
+    def init_ui(self):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
 
         self.ribbon_label = QLabel()
-        self.ribbon_label.setFixedSize(300, 100)
+        self.ribbon_label.setFixedSize(int(1448 * self.ui_scale_factor), int(399 * self.ui_scale_factor))
         self.ribbon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.ribbon_label)
 
@@ -60,9 +58,11 @@ class RibbonDesigner(QMainWindow):
         QShortcut(QKeySequence("Ctrl+O"), self, self.import_ribbon)
 
     def draw_ribbon(self):
-        pixmap = RibbonDrawer.draw_ribbon(self.ribbon_data)
-        self.ribbon_label.setPixmap(pixmap)
-        self.history.append(copy.deepcopy(self.ribbon_data.data))
+        pixmap = RibbonDrawer.draw_ribbon(self.ribbon_data, draw_outline=True)
+        scaled_pixmap = pixmap.scaled(int(1448 * self.ui_scale_factor), int(399 * self.ui_scale_factor), 
+                                      Qt.AspectRatioMode.KeepAspectRatio, 
+                                      Qt.TransformationMode.SmoothTransformation)
+        self.ribbon_label.setPixmap(scaled_pixmap)
 
     def clear_all(self):
         self.ribbon_data = RibbonData()
@@ -75,20 +75,64 @@ class RibbonDesigner(QMainWindow):
             self.draw_ribbon()
 
     def add_stripe(self):
-        stripe_input = get_stripe_input(self)
-        if stripe_input:
-            x, width, color = stripe_input
-            self.ribbon_data.add_stripe(x, width, color)
+        result = get_stripe_input(self)
+        if result:
+            x, width, color = result
+            # Convert UI coordinates to internal coordinates
+            internal_x = int(x * 1448 / 300)
+            internal_width = int(width * 1448 / 300)
+            self.ribbon_data.add_stripe(internal_x, internal_width, color)
             self.draw_ribbon()
 
     def edit_stripe(self):
-        index = select_item(self, "Edit Stripe", "Select stripe to edit:", [f"Stripe at x={s['x']}, width={s['width']}" for s in self.ribbon_data.data['stripes']])
+        index = select_item(self, "Edit Stripe", "Select stripe to edit:", 
+                            [f"Stripe at ({s['x']}, width: {s['width']})" for s in self.ribbon_data.data['stripes']])
         if index is not None:
             stripe = self.ribbon_data.data['stripes'][index]
-            x, width, color = get_stripe_input(self, stripe['x'], stripe['width'])
-            if x is not None:
-                mirrored = stripe.get('mirrored', False)
-                self.ribbon_data.edit_stripe(index, x, width, color, mirrored)
+            # Convert internal coordinates to UI coordinates
+            ui_x = int(stripe['x'] * 300 / 1448)
+            ui_width = int(stripe['width'] * 300 / 1448)
+            result = get_stripe_input(self, ui_x, ui_width)
+            if result:
+                x, width, color = result
+                # Convert UI coordinates back to internal coordinates
+                internal_x = int(x * 1448 / 300)
+                internal_width = int(width * 1448 / 300)
+                self.ribbon_data.edit_stripe(index, internal_x, internal_width, color, stripe['mirrored'])
+                self.draw_ribbon()
+
+    def add_device(self):
+        device_selector = DeviceSelector(self, self.ribbon_data.load_available_devices())
+        if device_selector.exec():
+            selected_device = device_selector.selected_device
+            x, ok1 = QInputDialog.getInt(self, "Device Position", "Enter X coordinate:", 0, 0, 300)
+            y, ok2 = QInputDialog.getInt(self, "Device Position", "Enter Y coordinate:", 50, 0, 100)
+            if ok1 and ok2:
+                # Convert UI coordinates to internal coordinates
+                internal_x = int(x * 1448 / 300)
+                internal_y = int(y * 399 / 100)
+                device_pixmap = QPixmap(selected_device['path'])
+                aspect_ratio = device_pixmap.width() / device_pixmap.height()
+                internal_height = int(50 * 399 / 100)  # Default to 50% of ribbon height
+                internal_width = int(internal_height * aspect_ratio)
+                self.ribbon_data.add_device(selected_device['name'], selected_device['path'], 
+                                            internal_x, internal_y, internal_width, internal_height)
+                self.draw_ribbon()
+
+    def edit_device(self):
+        index = select_item(self, "Edit Device", "Select device to edit:", 
+                            [f"{d['name']} at ({d['x']}, {d['y']})" for d in self.ribbon_data.data['devices']])
+        if index is not None:
+            device = self.ribbon_data.data['devices'][index]
+            # Convert internal coordinates to UI coordinates
+            ui_x = int(device['x'] * 300 / 1448)
+            ui_y = int(device['y'] * 100 / 399)
+            name, color, x, y = get_device_input(self, device['name'], ui_x, ui_y)
+            if name is not None:
+                # Convert UI coordinates back to internal coordinates
+                internal_x = int(x * 1448 / 300)
+                internal_y = int(y * 399 / 100)
+                self.ribbon_data.edit_device(index, name, color, internal_x, internal_y)
                 self.draw_ribbon()
 
     def remove_stripe(self):
@@ -96,22 +140,6 @@ class RibbonDesigner(QMainWindow):
         if index is not None:
             self.ribbon_data.remove_stripe(index)
             self.draw_ribbon()
-
-    def add_device(self):
-        device_input = get_device_input(self)
-        if device_input:
-            name, color, x, y = device_input
-            self.ribbon_data.add_device(name, color, x, y)
-            self.draw_ribbon()
-
-    def edit_device(self):
-        index = select_item(self, "Edit Device", "Select device to edit:", [f"{d['name']} at ({d['x']}, {d['y']})" for d in self.ribbon_data.data['devices']])
-        if index is not None:
-            device = self.ribbon_data.data['devices'][index]
-            name, color, x, y = get_device_input(self, device['name'], device['x'], device['y'])
-            if name is not None:
-                self.ribbon_data.edit_device(index, name, color, x, y)
-                self.draw_ribbon()
 
     def remove_device(self):
         index = select_item(self, "Remove Device", "Select device to remove:", [f"{d['name']} at ({d['x']}, {d['y']})" for d in self.ribbon_data.data['devices']])
@@ -144,14 +172,17 @@ class RibbonDesigner(QMainWindow):
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             pos = self.ribbon_label.mapFrom(self, event.pos())
-            if 0 <= pos.x() <= 300 and 0 <= pos.y() <= 100:
+            if 0 <= pos.x() <= int(1448 * self.ui_scale_factor) and 0 <= pos.y() <= int(399 * self.ui_scale_factor):
                 self.place_device(pos.x(), pos.y())
 
     def place_device(self, x, y):
         device_input = get_device_input(self, default_x=x, default_y=y)
         if device_input:
             name, color, x, y = device_input
-            self.ribbon_data.add_device(name, color, x, y)
+            # Convert UI coordinates to internal coordinates
+            internal_x = int(x * 1448 / 300)
+            internal_y = int(y * 399 / 100)
+            self.ribbon_data.add_device(name, color, internal_x, internal_y)
             self.draw_ribbon()
 
     def toggle_mirror_stripe(self):
@@ -164,3 +195,6 @@ class RibbonDesigner(QMainWindow):
     def toggle_texture(self):
         self.ribbon_data.data['texture_enabled'] = not self.ribbon_data.data['texture_enabled']
         self.draw_ribbon()
+
+    def load_available_devices(self):
+        self.available_devices = self.ribbon_data.load_available_devices()

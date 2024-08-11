@@ -1,4 +1,6 @@
 import json
+import os
+from pathlib import Path
 
 class RibbonData:
     def __init__(self):
@@ -12,8 +14,8 @@ class RibbonData:
     def add_stripe(self, x, width, color, mirrored=False):
         self.data['stripes'].append({'x': x, 'width': width, 'color': color, 'mirrored': mirrored})
 
-    def add_device(self, name, color, x, y):
-        self.data['devices'].append({'name': name, 'color': color, 'x': x, 'y': y})
+    def add_device(self, name, path, x, y, width, height):
+        self.data['devices'].append({'name': name, 'path': path, 'x': x, 'y': y, 'width': width, 'height': height})
 
     def set_background(self, color):
         self.data['background'] = color
@@ -27,8 +29,17 @@ class RibbonData:
     def edit_stripe(self, index, x, width, color, mirrored):
         self.data['stripes'][index] = {'x': x, 'width': width, 'color': color, 'mirrored': mirrored}
 
-    def edit_device(self, index, name, color, x, y):
-        self.data['devices'][index] = {'name': name, 'color': color, 'x': x, 'y': y}
+    def edit_device(self, index, name, color_or_path, x, y, width=None, height=None):
+        device = self.data['devices'][index]
+        device['name'] = name
+        device['x'] = x
+        device['y'] = y
+        if width is not None and height is not None:
+            device['path'] = color_or_path
+            device['width'] = width
+            device['height'] = height
+        else:
+            device['color'] = color_or_path
 
     def load_from_file(self, filename):
         with open(filename, 'r') as file:
@@ -45,3 +56,13 @@ class RibbonData:
             'devices': [],
             'texture_enabled': False
         }
+
+    def load_available_devices(self):
+        devices_dir = Path(__file__).parent.parent / 'standard_devices'
+        available_devices = []
+        for file in devices_dir.glob('*.png'):
+            available_devices.append({
+                'name': file.stem,
+                'path': str(file)
+            })
+        return available_devices
