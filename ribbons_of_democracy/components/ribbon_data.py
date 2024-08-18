@@ -8,7 +8,8 @@ class RibbonData:
             'background': '#000000',
             'stripes': [],
             'devices': [],
-            'texture_enabled': False
+            'texture_enabled': False,
+            'frame': None  # Can be 'gold', 'silver', or None
         }
 
     def add_stripe(self, x, width, color, mirrored=False):
@@ -48,13 +49,26 @@ class RibbonData:
     def save_to_file(self, filename):
         with open(filename, 'w') as file:
             json.dump(self.data, file)
+            
+    def set_frame(self, frame_type):
+        if frame_type in ['gold', 'silver', None]:
+            self.data['frame'] = frame_type
+            if frame_type:
+                frame_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frames', f"{frame_type.capitalize()}-Frame.png")
+                if not os.path.exists(frame_path):
+                    print(f"Warning: Frame file not found at {frame_path}")
+                    self.data['frame'] = None
+
+    def remove_frame(self):
+        self.data['frame'] = None
 
     def clear(self):
         self.data = {
             'background': '#000000',
             'stripes': [],
             'devices': [],
-            'texture_enabled': False
+            'texture_enabled': False,
+            'frame': None  # Can be 'gold', 'silver', or None
         }
 
     def load_available_devices(self):
