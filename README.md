@@ -24,5 +24,11 @@ poetry run ribbons_of_democracy
 - Add, edit, and remove devices
 - Customize ribbon colors and layouts
 - Visual placement of devices
+- Add and remove super earth logos
+- Change background color
+- Add and remove frames
+- Undo last action
+- Clear all
 
 More features coming soon!
+

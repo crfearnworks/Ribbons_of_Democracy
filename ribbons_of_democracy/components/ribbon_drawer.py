@@ -53,11 +53,16 @@ class RibbonDrawer:
                 painter.drawPixmap(x_offset, y_offset, scaled_pixmap)
                 x_offset += scaled_width
         
-        # Draw preview outline only if requested
-        if draw_outline:
-            painter.setPen(Qt.PenStyle.DashLine)
-            painter.drawRect(0, 0, width, height)
-            
+        # Draw logo if set
+        if ribbon_data.data['logo']:
+            logo_pixmap = QPixmap(ribbon_data.data['logo'])
+            logo_height = RIBBON_HEIGHT - 40  # 20 pixels from top and bottom
+            logo_width = int(logo_height * (logo_pixmap.width() / logo_pixmap.height()))
+            scaled_logo = logo_pixmap.scaled(logo_width, logo_height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            logo_x = (RIBBON_WIDTH - logo_width) // 2
+            logo_y = 20  # 20 pixels from the top
+            painter.drawPixmap(logo_x, logo_y, scaled_logo)
+
         # Draw frame if set
         if ribbon_data.data['frame']:
             frame_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'frames', f"{ribbon_data.data['frame'].capitalize()}-Frame.png")
@@ -65,6 +70,11 @@ class RibbonDrawer:
             scaled_frame = frame_pixmap.scaled(width, height, Qt.AspectRatioMode.IgnoreAspectRatio, Qt.TransformationMode.SmoothTransformation)
             painter.drawPixmap(0, 0, scaled_frame)
         
+        # Draw preview outline only if requested
+        if draw_outline:
+            painter.setPen(Qt.PenStyle.DashLine)
+            painter.drawRect(0, 0, width, height)
+            
         if should_end_painter:
             painter.end()
             return pixmap

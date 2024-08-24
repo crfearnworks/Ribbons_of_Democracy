@@ -1,6 +1,6 @@
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QFileDialog, QColorDialog, QDialog, QInputDialog
+from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QLabel, QFileDialog, QColorDialog, QDialog, QInputDialog, QMessageBox
 from PyQt6.QtGui import QKeySequence, QShortcut, QColor, QPixmap, QPainter, QIcon
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSize
 from .ribbon_data import RibbonData
 from .ribbon_drawer import RibbonDrawer
 from .ui_components import get_stripe_input, get_device_input, select_item
@@ -14,10 +14,18 @@ RIBBON_HEIGHT = 282
 class RibbonDesigner(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Ribbon Designer")
+        self.setWindowTitle("Ribbons of Democracy")
+        self.set_window_icon()
         self.ribbon_data = RibbonData()
         self.ui_scale_factor = 0.5  # Scale factor for UI display
         self.init_ui()
+
+    def set_window_icon(self):
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'icons', '07 Skull White.png')
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
+        else:
+            print("Warning: Window icon not found.")
 
     def init_ui(self):
         self.setStyleSheet("""
@@ -27,10 +35,18 @@ class RibbonDesigner(QMainWindow):
                 color: #ffffff; 
                 border: 1px solid #555555;
                 padding: 5px;
-                min-width: 80px;
+                min-width: 100px;
+                min-height: 30px;
             }
             QPushButton:hover { background-color: #4c5052; }
             QLabel { background-color: #1e1e1e; border: 1px solid #555555; }
+            QLabel.group-label { 
+                background-color: #4c5052; 
+                color: #ffffff; 
+                font-weight: bold; 
+                padding: 5px;
+                border-radius: 5px;
+            }
         """)
 
         central_widget = QWidget()
@@ -48,24 +64,37 @@ class RibbonDesigner(QMainWindow):
             ("Edit", [("Add Stripe", self.add_stripe), ("Edit Stripe", self.edit_stripe), ("Remove Stripe", self.remove_stripe)]),
             ("Devices", [("Add Device", self.add_device), ("Edit Device", self.edit_device), ("Remove Device", self.remove_device)]),
             ("Frame", [("Add Gold Frame", self.add_gold_frame), ("Add Silver Frame", self.add_silver_frame), ("Remove Frame", self.remove_frame)]),
-            ("Misc", [("Change Background", self.change_background), ("Clear All", self.clear_all), ("Undo", self.undo_last_action),
-                      ("Toggle Mirror", self.toggle_mirror_stripe), ("Toggle Texture", self.toggle_texture)])
+            ("Misc", [("Background", self.change_background), ("Clear All", self.clear_all), ("Undo", self.undo_last_action),
+                      ("Toggle Mirror", self.toggle_mirror_stripe), ("Toggle Texture", self.toggle_texture)]),
+            ("Super Earth Logo", [("Add Logo", self.add_logo), ("Remove Logo", self.remove_logo)]),
+            ("Help", [("About", self.show_about)])
         ]
 
         for group_name, buttons in button_groups:
             group_layout = QVBoxLayout()
-            group_layout.addWidget(QLabel(group_name))
-            for text, func in buttons:
+            group_label = QLabel(group_name)
+            group_label.setProperty("class", "group-label")
+            group_layout.addWidget(group_label)
+
+            grid_layout = QGridLayout()
+            grid_layout.setSpacing(5)
+            for i, (text, func) in enumerate(buttons):
                 button = QPushButton(QIcon(self.get_icon_path(text.lower().replace(' ', '_'))), text)
                 button.clicked.connect(func)
-                group_layout.addWidget(button)
+                button.setIconSize(QSize(16, 16))  # Set a smaller icon size
+                button.setFixedSize(120, 40)  # Set a fixed size for all buttons
+                grid_layout.addWidget(button, i // 2, i % 2)
+
+            group_layout.addLayout(grid_layout)
             button_layout.addLayout(group_layout)
+            button_layout.addSpacing(5)  # Reduce spacing between groups
 
         main_layout.addLayout(button_layout)
         self.draw_ribbon()
 
     def get_icon_path(self, icon_name):
-        return os.path.join(os.path.dirname(os.path.dirname(__file__)), 'icons', f'{icon_name}.png')
+        icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'icons', f'{icon_name}.png')
+        return icon_path if os.path.exists(icon_path) else ''
 
     def setup_shortcuts(self):
         QShortcut(QKeySequence("Ctrl+Z"), self, self.undo_last_action)
@@ -99,16 +128,10 @@ class RibbonDesigner(QMainWindow):
                             [f"Stripe at ({s['x']}, width: {s['width']})" for s in self.ribbon_data.data['stripes']])
         if index is not None:
             stripe = self.ribbon_data.data['stripes'][index]
-            # Convert internal coordinates to UI coordinates
-            ui_x = int(stripe['x'] * RIBBON_WIDTH / SCALE_X)
-            ui_width = int(stripe['width'] * RIBBON_WIDTH / SCALE_X)
-            result = get_stripe_input(self, ui_x, ui_width)
+            result = get_stripe_input(self, stripe['x'], stripe['width'])
             if result:
                 x, width, color = result
-                # Convert UI coordinates back to internal coordinates
-                internal_x = int(x / SCALE_X)
-                internal_width = int(width / SCALE_X)
-                self.ribbon_data.edit_stripe(index, internal_x, internal_width, color, stripe['mirrored'])
+                self.ribbon_data.edit_stripe(index, x, width, color, stripe['mirrored'])
                 self.draw_ribbon()
 
     def add_device(self):
@@ -120,7 +143,7 @@ class RibbonDesigner(QMainWindow):
             max_height = RIBBON_HEIGHT // 3  # One-third of the ribbon height
             height = min(int(RIBBON_HEIGHT * 0.3), max_height)
             width = int(height * aspect_ratio)
-            x = 0  # Will be adjusted when drawing
+            x = (RIBBON_WIDTH - width) // 2  # Center horizontally
             y = (RIBBON_HEIGHT - height) // 2  # Center vertically
             self.ribbon_data.add_device(selected_device['name'], selected_device['path'], 
                                         x, y, width, height)
@@ -139,7 +162,7 @@ class RibbonDesigner(QMainWindow):
                 max_height = RIBBON_HEIGHT // 3  # One-third of the ribbon height
                 height = min(int(RIBBON_HEIGHT * 0.3), max_height)
                 width = int(height * aspect_ratio)
-                x = 0  # Will be adjusted when drawing
+                x = (RIBBON_WIDTH - width) // 2  # Center horizontally
                 y = (RIBBON_HEIGHT - height) // 2  # Center vertically
                 self.ribbon_data.edit_device(index, selected_device['name'], selected_device['path'], 
                                              x, y, width, height)
@@ -189,10 +212,7 @@ class RibbonDesigner(QMainWindow):
         device_input = get_device_input(self, default_x=x, default_y=y)
         if device_input:
             name, color, x, y = device_input
-            # Convert UI coordinates to internal coordinates
-            internal_x = int(x / SCALE_X)
-            internal_y = int(y / SCALE_Y)
-            self.ribbon_data.add_device(name, color, internal_x, internal_y)
+            self.ribbon_data.add_device(name, color, x, y)
             self.draw_ribbon()
 
     def toggle_mirror_stripe(self):
@@ -220,3 +240,24 @@ class RibbonDesigner(QMainWindow):
     def remove_frame(self):
         self.ribbon_data.remove_frame()
         self.draw_ribbon()
+
+    def add_logo(self):
+        logo_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logo', 'Super Earth Brand 03 White.png')
+        if os.path.exists(logo_path):
+            self.ribbon_data.set_logo(logo_path)
+            self.draw_ribbon()
+        else:
+            QMessageBox.warning(self, "Logo Not Found", "The Super Earth logo file was not found in the logo directory.")
+
+    def remove_logo(self):
+        self.ribbon_data.remove_logo()
+        self.draw_ribbon()
+
+    def show_about(self):
+        about_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'ABOUT.md')
+        try:
+            with open(about_path, 'r', encoding='utf-8') as file:
+                about_text = file.read()
+            QMessageBox.about(self, "About Ribbons of Democracy", about_text)
+        except FileNotFoundError:
+            QMessageBox.warning(self, "About File Not Found", "The ABOUT.md file was not found.")

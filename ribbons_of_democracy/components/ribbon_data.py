@@ -9,7 +9,8 @@ class RibbonData:
             'stripes': [],
             'devices': [],
             'texture_enabled': False,
-            'frame': None  # Can be 'gold', 'silver', or None
+            'frame': None,  # Can be 'gold', 'silver', or None
+            'logo': None  # Will store the path to the logo image
         }
 
     def add_stripe(self, x, width, color, mirrored=False):
@@ -68,7 +69,8 @@ class RibbonData:
             'stripes': [],
             'devices': [],
             'texture_enabled': False,
-            'frame': None  # Can be 'gold', 'silver', or None
+            'frame': None,  # Can be 'gold', 'silver', or None
+            'logo': None  # Will store the path to the logo image
         }
 
     def load_available_devices(self):
@@ -80,3 +82,9 @@ class RibbonData:
                 'path': str(file)
             })
         return available_devices
+
+    def set_logo(self, logo_path):
+        self.data['logo'] = logo_path
+
+    def remove_logo(self):
+        self.data['logo'] = None
