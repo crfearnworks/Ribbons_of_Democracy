@@ -50,12 +50,23 @@ class RibbonData:
 
     def load_from_file(self, filename):
         with open(filename, 'r') as file:
-            self.data = json.load(file)
+            data = json.load(file)
+        if data.get('logo'):
+            logo_path = os.path.join(os.path.dirname(filename), data['logo'])
+            if os.path.exists(logo_path):
+                data['logo'] = logo_path
+            else:
+                print(f"Warning: Logo file not found at {logo_path}")
+                data['logo'] = None
+        self.data = data
 
     def save_to_file(self, filename):
+        data_to_save = self.data.copy()
+        if data_to_save.get('logo'):
+            data_to_save['logo'] = os.path.relpath(data_to_save['logo'], os.path.dirname(filename))
         with open(filename, 'w') as file:
-            json.dump(self.data, file)
-            
+            json.dump(data_to_save, file)
+
     def set_frame(self, frame_type):
         if frame_type in ['gold', 'silver', None]:
             self.data['frame'] = frame_type

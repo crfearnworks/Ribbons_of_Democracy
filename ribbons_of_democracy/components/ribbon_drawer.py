@@ -56,12 +56,15 @@ class RibbonDrawer:
         # Draw logo if set
         if ribbon_data.data['logo']:
             logo_pixmap = QPixmap(ribbon_data.data['logo'])
-            logo_height = RIBBON_HEIGHT - 40  # 20 pixels from top and bottom
-            logo_width = int(logo_height * (logo_pixmap.width() / logo_pixmap.height()))
-            scaled_logo = logo_pixmap.scaled(logo_width, logo_height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-            logo_x = (RIBBON_WIDTH - logo_width) // 2
-            logo_y = 20  # 20 pixels from the top
-            painter.drawPixmap(logo_x, logo_y, scaled_logo)
+            if not logo_pixmap.isNull():
+                logo_height = RIBBON_HEIGHT - 40  # 20 pixels from top and bottom
+                logo_width = int(logo_height * (logo_pixmap.width() / logo_pixmap.height()))
+                scaled_logo = logo_pixmap.scaled(logo_width, logo_height, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+                logo_x = (RIBBON_WIDTH - logo_width) // 2
+                logo_y = 20  # 20 pixels from the top
+                painter.drawPixmap(logo_x, logo_y, scaled_logo)
+            else:
+                print("Warning: Failed to load logo image")
 
         # Draw frame if set
         if ribbon_data.data['frame']:
