@@ -1,5 +1,5 @@
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QLabel, QFileDialog, QColorDialog, QDialog, QInputDialog, QMessageBox
-from PyQt6.QtGui import QKeySequence, QShortcut, QColor, QPixmap, QPainter, QIcon
+from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QFileDialog, QColorDialog, QInputDialog, QMessageBox, QMenuBar
+from PyQt6.QtGui import QKeySequence, QShortcut, QColor, QPixmap, QPainter, QIcon, QAction
 from PyQt6.QtCore import Qt, QSize
 from .ribbon_data import RibbonData
 from .ribbon_drawer import RibbonDrawer
@@ -17,7 +17,6 @@ class RibbonDesigner(QMainWindow):
         self.setWindowTitle("Ribbons of Democracy")
         self.set_window_icon()
         self.ribbon_data = RibbonData()
-        self.ui_scale_factor = 0.5  # Scale factor for UI display
         self.init_ui()
 
     def set_window_icon(self):
@@ -30,68 +29,73 @@ class RibbonDesigner(QMainWindow):
     def init_ui(self):
         self.setStyleSheet("""
             QMainWindow, QWidget { background-color: #2b2b2b; color: #ffffff; }
-            QPushButton { 
-                background-color: #3c3f41; 
-                color: #ffffff; 
-                border: 1px solid #555555;
-                padding: 5px;
-                min-width: 100px;
-                min-height: 30px;
-            }
-            QPushButton:hover { background-color: #4c5052; }
-            QLabel { background-color: #1e1e1e; border: 1px solid #555555; }
-            QLabel.group-label { 
-                background-color: #4c5052; 
-                color: #ffffff; 
-                font-weight: bold; 
-                padding: 5px;
-                border-radius: 5px;
-            }
+            QMenuBar { background-color: #3c3f41; }
+            QMenuBar::item { padding: 5px 10px; }
+            QMenuBar::item:selected { background-color: #4c5052; }
+            QMenu { background-color: #3c3f41; border: 1px solid #555555; }
+            QMenu::item { padding: 5px 20px; }
+            QMenu::item:selected { background-color: #4c5052; }
         """)
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
 
+        self.create_menu_bar()
+
         self.ribbon_label = QLabel()
         self.ribbon_label.setFixedSize(RIBBON_WIDTH, RIBBON_HEIGHT)
         self.ribbon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(self.ribbon_label)
 
-        button_layout = QHBoxLayout()
-        button_groups = [
-            ("File", [("Import", self.import_ribbon), ("Export", self.export_ribbon), ("Save as PNG", self.save_as_png)]),
-            ("Edit", [("Add Stripe", self.add_stripe), ("Edit Stripe", self.edit_stripe), ("Remove Stripe", self.remove_stripe)]),
-            ("Devices", [("Add Device", self.add_device), ("Edit Device", self.edit_device), ("Remove Device", self.remove_device)]),
-            ("Frame", [("Add Gold Frame", self.add_gold_frame), ("Add Silver Frame", self.add_silver_frame), ("Remove Frame", self.remove_frame)]),
-            ("Misc", [("Background", self.change_background), ("Clear All", self.clear_all), ("Undo", self.undo_last_action),
-                      ("Toggle Mirror", self.toggle_mirror_stripe), ("Toggle Texture", self.toggle_texture)]),
-            ("Super Earth Logo", [("Add Logo", self.add_logo), ("Remove Logo", self.remove_logo)]),
-            ("Help", [("About", self.show_about)]),
-            ("Ribbon Info", [("Edit Info", self.edit_ribbon_info), ("View Info", self.view_ribbon_info)])
-        ]
+        # Adjust window size to fit the ribbon and menu bar
+        menu_bar_height = self.menuBar().sizeHint().height()
+        window_width = RIBBON_WIDTH + 40  # Add some padding
+        window_height = RIBBON_HEIGHT + menu_bar_height + 40  # Add some padding
+        self.setGeometry(100, 100, window_width, window_height)
 
-        for group_name, buttons in button_groups:
-            group_layout = QVBoxLayout()
-            group_label = QLabel(group_name)
-            group_label.setProperty("class", "group-label")
-            group_layout.addWidget(group_label)
-
-            grid_layout = QGridLayout()
-            grid_layout.setSpacing(5)
-            for i, (text, func) in enumerate(buttons):
-                button = QPushButton(QIcon(self.get_icon_path(text.lower().replace(' ', '_'))), text)
-                button.clicked.connect(func)
-                button.setIconSize(QSize(16, 16))  # Set a smaller icon size
-                button.setFixedSize(120, 40)  # Set a fixed size for all buttons
-                grid_layout.addWidget(button, i // 2, i % 2)
-
-            group_layout.addLayout(grid_layout)
-            button_layout.addLayout(group_layout)
-            button_layout.addSpacing(5)  # Reduce spacing between groups
-
-        main_layout.addLayout(button_layout)
         self.draw_ribbon()
+
+    def create_menu_bar(self):
+        menu_bar = self.menuBar()
+
+        file_menu = menu_bar.addMenu("File")
+        file_menu.addAction("Import", self.import_ribbon)
+        file_menu.addAction("Export", self.export_ribbon)
+        file_menu.addAction("Save as PNG", self.save_as_png)
+
+        edit_menu = menu_bar.addMenu("Edit")
+        edit_menu.addAction("Add Stripe", self.add_stripe)
+        edit_menu.addAction("Edit Stripe", self.edit_stripe)
+        edit_menu.addAction("Remove Stripe", self.remove_stripe)
+
+        devices_menu = menu_bar.addMenu("Devices")
+        devices_menu.addAction("Add Device", self.add_device)
+        devices_menu.addAction("Edit Device", self.edit_device)
+        devices_menu.addAction("Remove Device", self.remove_device)
+
+        frame_menu = menu_bar.addMenu("Frame")
+        frame_menu.addAction("Add Gold Frame", self.add_gold_frame)
+        frame_menu.addAction("Add Silver Frame", self.add_silver_frame)
+        frame_menu.addAction("Remove Frame", self.remove_frame)
+
+        misc_menu = menu_bar.addMenu("Misc")
+        misc_menu.addAction("Change Background", self.change_background)
+        misc_menu.addAction("Clear All", self.clear_all)
+        misc_menu.addAction("Undo", self.undo_last_action)
+        misc_menu.addAction("Toggle Mirror", self.toggle_mirror_stripe)
+        misc_menu.addAction("Toggle Texture", self.toggle_texture)
+
+        logo_menu = menu_bar.addMenu("Logo")
+        logo_menu.addAction("Add Super Earth Logo", self.add_logo)
+        logo_menu.addAction("Remove Logo", self.remove_logo)
+
+        info_menu = menu_bar.addMenu("Info")
+        info_menu.addAction("Edit Info", self.edit_ribbon_info)
+        info_menu.addAction("View Info", self.view_ribbon_info)
+
+        help_menu = menu_bar.addMenu("Help")
+        help_menu.addAction("About", self.show_about)
 
     def get_icon_path(self, icon_name):
         icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'icons', f'{icon_name}.png')
