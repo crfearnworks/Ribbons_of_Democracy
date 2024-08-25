@@ -1,12 +1,16 @@
 [tool.poetry]
 name = "ribbons-of-democracy"
 version = "0.1.0"
-description = ""
+description = "A fast way to generate military decorations in service of the Helldivers in the Second Glactic War."
 authors = ["Charlie Rogers <charlie.rogers@fearnworks.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
+PyQt6 = "^6.7.1"
+
+[tool.poetry.scripts]
+ribbons-of-democracy = "ribbons_of_democracy.main:main"
 
 
 [build-system]
