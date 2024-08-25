@@ -10,7 +10,12 @@ class RibbonData:
             'devices': [],
             'texture_enabled': False,
             'frame': None,  # Can be 'gold', 'silver', or None
-            'logo': None  # Will store the path to the logo image
+            'logo': None,  # Will store the path to the logo image
+            'info': {
+                'name': '',
+                'award_details': '',
+                'device_details': ''
+            }
         }
 
     def add_stripe(self, x, width, color, mirrored=False):
@@ -70,7 +75,12 @@ class RibbonData:
             'devices': [],
             'texture_enabled': False,
             'frame': None,  # Can be 'gold', 'silver', or None
-            'logo': None  # Will store the path to the logo image
+            'logo': None,  # Will store the path to the logo image
+            'info': {
+                'name': '',
+                'award_details': '',
+                'device_details': ''
+            }
         }
 
     def load_available_devices(self):
@@ -88,3 +98,13 @@ class RibbonData:
 
     def remove_logo(self):
         self.data['logo'] = None
+
+    def set_ribbon_info(self, name, award_details, device_details):
+        self.data['info'] = {
+            'name': name,
+            'award_details': award_details,
+            'device_details': device_details
+        }
+
+    def get_ribbon_info(self):
+        return self.data['info']

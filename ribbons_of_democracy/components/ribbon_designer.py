@@ -67,7 +67,8 @@ class RibbonDesigner(QMainWindow):
             ("Misc", [("Background", self.change_background), ("Clear All", self.clear_all), ("Undo", self.undo_last_action),
                       ("Toggle Mirror", self.toggle_mirror_stripe), ("Toggle Texture", self.toggle_texture)]),
             ("Super Earth Logo", [("Add Logo", self.add_logo), ("Remove Logo", self.remove_logo)]),
-            ("Help", [("About", self.show_about)])
+            ("Help", [("About", self.show_about)]),
+            ("Ribbon Info", [("Edit Info", self.edit_ribbon_info), ("View Info", self.view_ribbon_info)])
         ]
 
         for group_name, buttons in button_groups:
@@ -261,3 +262,20 @@ class RibbonDesigner(QMainWindow):
             QMessageBox.about(self, "About Ribbons of Democracy", about_text)
         except FileNotFoundError:
             QMessageBox.warning(self, "About File Not Found", "The ABOUT.md file was not found.")
+
+    def edit_ribbon_info(self):
+        current_info = self.ribbon_data.get_ribbon_info()
+        name, ok1 = QInputDialog.getText(self, "Ribbon Name", "Enter ribbon name:", text=current_info['name'])
+        if ok1:
+            award_details, ok2 = QInputDialog.getMultiLineText(self, "Award Details", "Enter award details:", current_info['award_details'])
+            if ok2:
+                device_details, ok3 = QInputDialog.getMultiLineText(self, "Device Details", "Enter device details:", current_info['device_details'])
+                if ok3:
+                    self.ribbon_data.set_ribbon_info(name, award_details, device_details)
+
+    def view_ribbon_info(self):
+        info = self.ribbon_data.get_ribbon_info()
+        message = f"Ribbon Name: {info['name']}\n\n"
+        message += f"Award Details:\n{info['award_details']}\n\n"
+        message += f"Device Details:\n{info['device_details']}"
+        QMessageBox.information(self, "Ribbon Information", message)
