@@ -34,7 +34,8 @@ class RibbonData:
         del self.data['devices'][index]
 
     def edit_stripe(self, index, x, width, color, mirrored):
-        self.data['stripes'][index] = {'x': x, 'width': width, 'color': color, 'mirrored': mirrored}
+        if 0 <= index < len(self.data['stripes']):
+            self.data['stripes'][index] = {'x': x, 'width': width, 'color': color, 'mirrored': mirrored}
 
     def edit_device(self, index, name, color_or_path, x, y, width=None, height=None):
         device = self.data['devices'][index]

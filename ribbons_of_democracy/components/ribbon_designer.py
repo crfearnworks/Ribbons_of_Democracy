@@ -133,10 +133,11 @@ class RibbonDesigner(QMainWindow):
                             [f"Stripe at ({s['x']}, width: {s['width']})" for s in self.ribbon_data.data['stripes']])
         if index is not None:
             stripe = self.ribbon_data.data['stripes'][index]
-            result = get_stripe_input(self, stripe['x'], stripe['width'])
+            result = get_stripe_input(self, stripe['x'], stripe['width'], QColor(stripe['color']))
             if result:
                 x, width, color = result
-                self.ribbon_data.edit_stripe(index, x, width, color, stripe['mirrored'])
+                mirrored = stripe.get('mirrored', False)
+                self.ribbon_data.edit_stripe(index, x, width, color, mirrored)
                 self.draw_ribbon()
 
     def add_device(self):
