@@ -101,7 +101,7 @@ class RibbonDrawer:
 
     @staticmethod
     def save_as_png(ribbon_data, filename):
-        original_width, original_height = RIBBON_WIDTH, RIBBON_HEIGHT
+        _, _ = RIBBON_WIDTH, RIBBON_HEIGHT
         target_width, target_height = 1024, 282
 
         pixmap = RibbonDrawer.draw_ribbon(ribbon_data, draw_outline=False)
