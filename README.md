@@ -14,7 +14,7 @@ A fast way to generate military decorations in service of the Helldivers in the 
 Run the application using:
 
 ```
-poetry run ribbons_of_democracy
+poetry run ribbons-of-democracy
 ```
 
 ## Features
