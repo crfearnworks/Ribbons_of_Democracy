@@ -1,5 +1,7 @@
 # Ribbons of Democracy
 
+![The Liberty Citation in the Ribbons of Democracy program](ribbons_of_democracy/image.png)
+
 A fast way to generate military decorations in service of the Helldivers in the Second Galactic War.
 
 ## Installation
