@@ -1,5 +1,5 @@
 # Ribbons of Democracy
-
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=crfearnworks_Ribbons_of_Democracy&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=crfearnworks_Ribbons_of_Democracy)
 ![The Liberty Citation in the Ribbons of Democracy program](ribbons_of_democracy/image.png)
 
 A fast way to generate military decorations in service of the Helldivers in the Second Galactic War.
