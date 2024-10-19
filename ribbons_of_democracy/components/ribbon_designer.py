@@ -200,7 +200,6 @@ class RibbonDesigner(QMainWindow):
         index = select_item(self, "Edit Device", "Select device to edit:", 
                             [f"{d['name']}" for d in self.ribbon_data.data['devices']])
         if index is not None:
-            device = self.ribbon_data.data['devices'][index]
             device_selector = DeviceSelector(self, self.ribbon_data.load_available_devices())
             if device_selector.exec():
                 selected_device = device_selector.selected_device

@@ -81,19 +81,7 @@ class RibbonData:
         self.data['frame'] = None
 
     def clear(self):
-        self.data = {
-            'background': '#000000',
-            'stripes': [],
-            'devices': [],
-            'texture_enabled': False,
-            'frame': None,  # Can be 'gold', 'silver', or None
-            'logo': None,  # Will store the path to the logo image
-            'info': {
-                'name': '',
-                'award_details': '',
-                'device_details': ''
-            }
-        }
+        return self.__init__
 
     def load_available_devices(self):
         devices_dir = Path(__file__).parent.parent / 'standard_devices'
