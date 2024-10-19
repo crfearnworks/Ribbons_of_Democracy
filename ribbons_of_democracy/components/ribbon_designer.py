@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QFileDialog, QColorDialog, QInputDialog, QMessageBox, QMenuBar
+from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QLabel, QFileDialog, QColorDialog, QInputDialog, QMessageBox, QMenuBar, QSlider, QHBoxLayout, QPushButton, QComboBox
 from PyQt6.QtGui import QKeySequence, QShortcut, QColor, QPixmap, QPainter, QIcon, QAction
 from PyQt6.QtCore import Qt, QSize
 from .ribbon_data import RibbonData
@@ -17,6 +17,7 @@ class RibbonDesigner(QMainWindow):
         self.setWindowTitle("Ribbons of Democracy")
         self.set_window_icon()
         self.ribbon_data = RibbonData()
+        self.current_stripe_color = QColor("#FFFFFF")
         self.init_ui()
 
     def set_window_icon(self):
@@ -35,6 +36,19 @@ class RibbonDesigner(QMainWindow):
             QMenu { background-color: #3c3f41; border: 1px solid #555555; }
             QMenu::item { padding: 5px 20px; }
             QMenu::item:selected { background-color: #4c5052; }
+            QSlider::groove:horizontal { 
+                border: 1px solid #999999;
+                height: 8px;
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #4c4c4c, stop:1 #333333);
+                margin: 2px 0;
+            }
+            QSlider::handle:horizontal {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #b4b4b4, stop:1 #8f8f8f);
+                border: 1px solid #5c5c5c;
+                width: 18px;
+                margin: -2px 0;
+                border-radius: 3px;
+            }
         """)
 
         central_widget = QWidget()
@@ -48,13 +62,47 @@ class RibbonDesigner(QMainWindow):
         self.ribbon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         main_layout.addWidget(self.ribbon_label)
 
-        # Adjust window size to fit the ribbon and menu bar
+        self.create_stripe_controls(main_layout)
+
+        # Adjust window size to fit the ribbon, menu bar, and stripe controls
         menu_bar_height = self.menuBar().sizeHint().height()
         window_width = RIBBON_WIDTH + 40  # Add some padding
-        window_height = RIBBON_HEIGHT + menu_bar_height + 40  # Add some padding
+        window_height = RIBBON_HEIGHT + menu_bar_height + 100  # Add extra height for stripe controls
         self.setGeometry(100, 100, window_width, window_height)
 
         self.draw_ribbon()
+
+    def create_stripe_controls(self, main_layout):
+        stripe_layout = QHBoxLayout()
+
+        self.stripe_selector = QComboBox()
+        self.stripe_selector.addItem("New Stripe")
+        self.stripe_selector.currentIndexChanged.connect(self.on_stripe_selected)
+        stripe_layout.addWidget(self.stripe_selector)
+
+        position_layout = QVBoxLayout()
+        position_label = QLabel("Position:")
+        self.x_slider = QSlider(Qt.Orientation.Horizontal)
+        self.x_slider.setRange(0, RIBBON_WIDTH)
+        self.x_slider.valueChanged.connect(self.on_stripe_changed)
+        position_layout.addWidget(position_label)
+        position_layout.addWidget(self.x_slider)
+        stripe_layout.addLayout(position_layout)
+
+        width_layout = QVBoxLayout()
+        width_label = QLabel("Width:")
+        self.width_slider = QSlider(Qt.Orientation.Horizontal)
+        self.width_slider.setRange(1, RIBBON_WIDTH)
+        self.width_slider.valueChanged.connect(self.on_stripe_changed)
+        width_layout.addWidget(width_label)
+        width_layout.addWidget(self.width_slider)
+        stripe_layout.addLayout(width_layout)
+
+        self.color_button = QPushButton("Color")
+        self.color_button.clicked.connect(self.choose_stripe_color)
+        stripe_layout.addWidget(self.color_button)
+
+        main_layout.addLayout(stripe_layout)
 
     def create_menu_bar(self):
         menu_bar = self.menuBar()
@@ -120,25 +168,18 @@ class RibbonDesigner(QMainWindow):
             self.history.pop()  # Remove the current state
             self.ribbon_data.data = copy.deepcopy(self.history[-1])
             self.draw_ribbon()
-
     def add_stripe(self):
-        result = get_stripe_input(self)
-        if result:
-            x, width, color = result
-            self.ribbon_data.add_stripe(x, width, color)
-            self.draw_ribbon()
+        self.stripe_selector.setCurrentIndex(0)
+        self.x_slider.setValue(0)
+        self.width_slider.setValue(50)
+        self.current_stripe_color = QColor("#FFFFFF")
+        self.update_color_button()
 
     def edit_stripe(self):
-        index = select_item(self, "Edit Stripe", "Select stripe to edit:", 
-                            [f"Stripe at ({s['x']}, width: {s['width']})" for s in self.ribbon_data.data['stripes']])
-        if index is not None:
-            stripe = self.ribbon_data.data['stripes'][index]
-            result = get_stripe_input(self, stripe['x'], stripe['width'], QColor(stripe['color']))
-            if result:
-                x, width, color = result
-                mirrored = stripe.get('mirrored', False)
-                self.ribbon_data.edit_stripe(index, x, width, color, mirrored)
-                self.draw_ribbon()
+        if self.ribbon_data.data['stripes']:
+            self.stripe_selector.setCurrentIndex(1)
+        else:
+            QMessageBox.information(self, "No Stripes", "There are no stripes to edit.")
 
     def add_device(self):
         device_selector = DeviceSelector(self, self.ribbon_data.load_available_devices())
@@ -284,3 +325,54 @@ class RibbonDesigner(QMainWindow):
         message += f"Award Details:\n{info['award_details']}\n\n"
         message += f"Device Details:\n{info['device_details']}"
         QMessageBox.information(self, "Ribbon Information", message)
+        
+    def on_stripe_selected(self, index):
+        if index == 0:  # New Stripe
+            self.x_slider.setValue(0)
+            self.width_slider.setValue(50)
+            self.current_stripe_color = QColor("#FFFFFF")
+        elif 0 < index <= len(self.ribbon_data.data['stripes']):
+            stripe = self.ribbon_data.data['stripes'][index - 1]
+            self.x_slider.setValue(stripe['x'])
+            self.width_slider.setValue(stripe['width'])
+            self.current_stripe_color = QColor(stripe['color'])
+        self.update_color_button()
+
+    def on_stripe_changed(self):
+        if self.stripe_selector.currentIndex() > 0:
+            self.apply_stripe_changes(draw=True)
+
+    def choose_stripe_color(self):
+        current_color = self.current_stripe_color if hasattr(self, 'current_stripe_color') else QColor("#FFFFFF")
+        color = QColorDialog.getColor(current_color)
+        if color.isValid():
+            self.current_stripe_color = color
+            self.update_color_button()
+            self.apply_stripe_changes(draw=True)
+
+    def update_color_button(self):
+        self.color_button.setStyleSheet(f"background-color: {self.current_stripe_color.name()}")
+
+    def apply_stripe_changes(self, draw=False):
+        x = self.x_slider.value()
+        width = self.width_slider.value()
+        color = self.current_stripe_color.name()
+        index = self.stripe_selector.currentIndex()
+        if index == 0:  # New Stripe
+            self.ribbon_data.add_stripe(x, width, color)
+            self.update_stripe_selector()
+        elif 0 < index <= len(self.ribbon_data.data['stripes']):
+            self.ribbon_data.edit_stripe(index - 1, x, width, color, self.ribbon_data.data['stripes'][index - 1]['mirrored'])
+        if draw:
+            self.draw_ribbon()
+
+    def update_stripe_selector(self):
+        current_index = self.stripe_selector.currentIndex()
+        self.stripe_selector.clear()
+        self.stripe_selector.addItem("New Stripe")
+        for i, stripe in enumerate(self.ribbon_data.data['stripes']):
+            self.stripe_selector.addItem(f"Stripe {i+1}")
+        if current_index < self.stripe_selector.count():
+            self.stripe_selector.setCurrentIndex(current_index)
+        else:
+            self.stripe_selector.setCurrentIndex(self.stripe_selector.count() - 1)
